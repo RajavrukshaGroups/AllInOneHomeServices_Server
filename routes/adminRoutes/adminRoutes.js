@@ -27,5 +27,6 @@ router.get(
   AdminReceiptController.getReceiptById,
 );
 router.get("/view-receipt/:id", AdminReceiptController.viewReceipt);
+router.delete("/delete-receipt/:id", AdminReceiptController.deleteReceipt);
 
 module.exports = router;

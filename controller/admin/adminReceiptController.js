@@ -14,6 +14,13 @@ const generateReceipt = async (req, res) => {
       referenceNumber,
     } = req.body;
 
+    const existingReceipt = await Receipt.findOne({ receiptNumber });
+    if (existingReceipt) {
+      return res.status(400).json({
+        message: "Receipt number already exists",
+      });
+    }
+
     const totalAmount = particulars.reduce(
       (sum, item) => sum + Number(item.amount || 0),
       0,
@@ -102,6 +109,18 @@ const editReceipt = async (req, res) => {
       });
     }
 
+    // 🔥 🚨 DUPLICATE CHECK (IMPORTANT)
+    const duplicate = await Receipt.findOne({
+      receiptNumber,
+      _id: { $ne: id }, // exclude current receipt
+    });
+
+    if (duplicate) {
+      return res.status(400).json({
+        message: "Receipt number already exists",
+      });
+    }
+
     // 🔥 Validate particulars
     const validParticulars = (particulars || []).filter(
       (item) => item.title && item.amount,
@@ -133,7 +152,7 @@ const editReceipt = async (req, res) => {
         referenceNumber: paymentMode === "cash" ? "" : referenceNumber,
         totalAmount,
       },
-      { new: true }, // return updated doc
+      { new: true },
     );
 
     res.status(200).json({
@@ -188,6 +207,13 @@ const viewReceipt = async (req, res) => {
       .replace(/,/g, "") // ❌ remove commas
       .replace(/\b\w/g, (c) => c.toUpperCase());
 
+    const formatName = (name) => {
+      return name.toLowerCase().replace(/\b\w/g, (char) => char.toUpperCase());
+    };
+
+    // 👇 format name
+    receipt.name = formatName(receipt.name);
+
     res.render("receipts/paymentReceipts", {
       receipt,
       amountInWords,
@@ -198,10 +224,38 @@ const viewReceipt = async (req, res) => {
   }
 };
 
+const deleteReceipt = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // 🔥 Check if exists
+    const receipt = await Receipt.findById(id);
+
+    if (!receipt) {
+      return res.status(404).json({
+        message: "Receipt not found",
+      });
+    }
+
+    // 🔥 Delete
+    await Receipt.findByIdAndDelete(id);
+
+    res.status(200).json({
+      message: "Receipt deleted successfully",
+    });
+  } catch (err) {
+    console.error("Delete receipt error:", err);
+    res.status(500).json({
+      message: "Error deleting receipt",
+    });
+  }
+};
+
 module.exports = {
   generateReceipt,
   fetchAllReceipts,
   editReceipt,
   getReceiptById,
   viewReceipt,
+  deleteReceipt
 };
