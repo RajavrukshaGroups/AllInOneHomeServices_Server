@@ -31,6 +31,10 @@ const contactSchema = new mongoose.Schema(
       required: true,
       trim: true,
     },
+    dob: { type: String },
+    age: { type: String },
+    gender: { type: String },
+    parentName: { type: String },
   },
   {
     timestamps: true,
