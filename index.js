@@ -5,12 +5,12 @@ const path = require("path");
 
 const { dbConnect } = require("./config/dbConnect");
 const adminRoutes = require("./routes/adminRoutes/adminRoutes");
-const contactRoutes = require("./routes/clientRoutes/contactRoutes");
+// const contactRoutes = require("./routes/clientRoutes/contactRoutes");
 
 const app = express();
 
 // Fallback port
-const port = process.env.PORT || 11000;
+const port = process.env.PORT || 12000;
 
 app.set("view engine", "ejs");
 app.set("views", path.join(__dirname, "views"));
@@ -60,7 +60,7 @@ dbConnect();
 ================================ */
 
 app.use("/admin", adminRoutes);
-app.use("/contact", contactRoutes);
+// app.use("/contact", contactRoutes);
 // app.use("/scholar", scholarRoutes);
 
 /* ===============================
