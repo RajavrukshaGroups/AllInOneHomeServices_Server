@@ -30,6 +30,26 @@ const serviceSchema = new mongoose.Schema(
 
     duration: Number, // in minutes
 
+    description: {
+      type: String,
+      default: "",
+    },
+    rating: {
+      type: Number,
+      default: 0,
+      min: 0,
+      max: 5,
+    },
+    totalReviews: {
+      type: Number,
+      default: 0,
+    },
+    keyFeatures: [
+      {
+        type: String,
+      },
+    ],
+
     options: [optionSchema],
 
     pricingType: {

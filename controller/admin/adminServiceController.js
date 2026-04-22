@@ -1,3 +1,4 @@
+const mongoose = require("mongoose");
 const Service = require("../../models/service");
 
 /* ==============================
@@ -5,11 +6,7 @@ const Service = require("../../models/service");
 ================================ */
 const normalizeParentId = (parentId) => {
   if (!parentId) return null;
-
-  if (Array.isArray(parentId)) {
-    return parentId[parentId.length - 1]; // take last value
-  }
-
+  if (Array.isArray(parentId)) return parentId[parentId.length - 1];
   return parentId;
 };
 
@@ -26,18 +23,41 @@ const createServices = async (req, res) => {
       });
     }
 
-    /* ✅ SAFE PARSE OPTIONS */
+    /* ==============================
+       ✅ PARSE OPTIONS
+    ============================== */
     let parsedOptions = [];
     try {
       parsedOptions = JSON.parse(req.body.options || "[]");
-    } catch (err) {
+    } catch {
       parsedOptions = [];
     }
 
-    /* ✅ IMAGE URLS */
+    /* ==============================
+       ✅ PARSE KEY FEATURES
+    ============================== */
+    let keyFeatures = [];
+    try {
+      keyFeatures = JSON.parse(req.body.keyFeatures || "[]");
+    } catch {
+      keyFeatures = [];
+    }
+
+    /* ==============================
+       ✅ PARSE RATING
+    ============================== */
+    const rating = Math.min(5, Math.max(0, Number(req.body.rating) || 0));
+
+    const totalReviews = Math.max(0, Number(req.body.totalReviews) || 0);
+
+    /* ==============================
+       ✅ IMAGES
+    ============================== */
     const imageUrls = req.files?.map((file) => file.path).filter(Boolean) || [];
 
-    /* ✅ CLEAN OPTIONS */
+    /* ==============================
+       ✅ CLEAN OPTIONS
+    ============================== */
     const cleanedOptions = parsedOptions
       .map((opt) => {
         const values = opt.values
@@ -56,15 +76,29 @@ const createServices = async (req, res) => {
       })
       .filter(Boolean);
 
-    /* ✅ REMOVE RAW FIELDS */
-    const { options, parentId, ...rest } = req.body;
+    /* ==============================
+       ✅ REMOVE RAW FIELDS
+    ============================== */
+    const {
+      options,
+      parentId,
+      keyFeatures: _,
+      rating: __,
+      totalReviews: ___,
+      ...rest
+    } = req.body;
 
     const service = new Service({
       ...rest,
       name,
-      type: req.body.type || "service",
+      description: req.body.description || "",
+      keyFeatures,
 
-      // 🔥 FIXED HERE
+      // ⭐ NEW
+      rating,
+      totalReviews,
+
+      type: req.body.type || "service",
       parentId: normalizeParentId(parentId),
 
       pricingType: pricingType || "fixed",
@@ -89,48 +123,57 @@ const createServices = async (req, res) => {
 };
 
 /* ==============================
-   FETCH TREE
-================================ */
-const serviceTree = async (req, res) => {
-  try {
-    const services = await Service.find().lean();
-
-    const buildTree = (data, parentId = null) => {
-      return data
-        .filter((item) => String(item.parentId) === String(parentId))
-        .map((item) => ({
-          ...item,
-          children: buildTree(data, item._id),
-        }));
-    };
-
-    const tree = buildTree(services);
-
-    res.json(tree);
-  } catch (err) {
-    res.status(500).json({
-      message: err.message,
-    });
-  }
-};
-
-/* ==============================
    UPDATE SERVICE
 ================================ */
 const updateService = async (req, res) => {
   try {
-    /* ✅ SAFE PARSE */
+    /* ==============================
+       ✅ PARSE OPTIONS
+    ============================== */
     let parsedOptions = [];
     try {
       parsedOptions = JSON.parse(req.body.options || "[]");
-    } catch (err) {
+    } catch {
       parsedOptions = [];
     }
 
-    /* ✅ IMAGE URLS */
+    /* ==============================
+       ✅ PARSE KEY FEATURES
+    ============================== */
+    let keyFeatures = [];
+    try {
+      keyFeatures = JSON.parse(req.body.keyFeatures || "[]");
+    } catch {
+      keyFeatures = [];
+    }
+
+    /* ==============================
+       ✅ PARSE RATING
+    ============================== */
+    const rating = Math.min(5, Math.max(0, Number(req.body.rating) || 0));
+
+    const totalReviews = Math.max(0, Number(req.body.totalReviews) || 0);
+
+    /* ==============================
+       ✅ NEW IMAGES
+    ============================== */
     const imageUrls = req.files?.map((file) => file.path).filter(Boolean) || [];
 
-    /* ✅ CLEAN OPTIONS */
+    /* ==============================
+       ✅ EXISTING IMAGES
+    ============================== */
+    let existingImages = [];
+    try {
+      existingImages = JSON.parse(req.body.existingImages || "[]");
+    } catch {
+      existingImages = [];
+    }
+
+    const finalImages = [...existingImages, ...imageUrls];
+
+    /* ==============================
+       ✅ CLEAN OPTIONS
+    ============================== */
     const cleanedOptions = parsedOptions
       .map((opt) => {
         const values = opt.values
@@ -149,8 +192,18 @@ const updateService = async (req, res) => {
       })
       .filter(Boolean);
 
-    /* ✅ REMOVE RAW FIELDS */
-    const { options, parentId, ...rest } = req.body;
+    /* ==============================
+       ✅ REMOVE RAW FIELDS
+    ============================== */
+    const {
+      options,
+      parentId,
+      existingImages: _,
+      keyFeatures: __,
+      rating: ___,
+      totalReviews: ____,
+      ...rest
+    } = req.body;
 
     const existingService = await Service.findById(req.params.id);
 
@@ -164,9 +217,14 @@ const updateService = async (req, res) => {
       req.params.id,
       {
         ...rest,
-        type: req.body.type || "service",
+        description: req.body.description || "",
+        keyFeatures,
 
-        // 🔥 FIXED HERE
+        // ⭐ NEW
+        rating,
+        totalReviews,
+
+        type: req.body.type || "service",
         parentId: normalizeParentId(parentId),
 
         pricingType: req.body.pricingType || "fixed",
@@ -176,11 +234,7 @@ const updateService = async (req, res) => {
             : 0,
 
         options: cleanedOptions,
-
-        // 🔥 MERGE IMAGES
-        ...(imageUrls.length > 0 && {
-          images: [...(existingService.images || []), ...imageUrls],
-        }),
+        images: finalImages,
       },
       { new: true, runValidators: true },
     );
@@ -218,39 +272,59 @@ const deleteService = async (req, res) => {
   }
 };
 
-// ==============================
-// GET SERVICE WITH CHILDREN
-// ==============================
+/* ==============================
+   GET TREE
+================================ */
+const getServiceTree = async (parentId) => {
+  const services = await Service.find({ parentId }).lean();
+
+  for (let service of services) {
+    service.children = await getServiceTree(service._id);
+  }
+
+  return services;
+};
+
 const getServiceWithChildren = async (req, res) => {
   try {
-    const { id } = req.params;
+    const objectId = new mongoose.Types.ObjectId(req.params.id);
 
-    // 🔥 Get parent service
-    const parent = await Service.findById(id).lean();
+    const parent = await Service.findById(objectId).lean();
 
     if (!parent) {
-      return res.status(404).json({
-        message: "Service not found",
-      });
+      return res.status(404).json({ message: "Service not found" });
     }
 
-    // 🔥 Get children
-    const children = await Service.find({ parentId: id }).lean();
+    const children = await getServiceTree(objectId);
 
-    res.json({
-      parent,
-      children,
-    });
+    res.json({ parent, children });
   } catch (err) {
     res.status(500).json({
       message: err.message,
     });
   }
 };
+
 module.exports = {
   createServices,
-  serviceTree,
   updateService,
   deleteService,
+  serviceTree: async (req, res) => {
+    try {
+      const services = await Service.find().lean();
+
+      const buildTree = (data, parentId = null) =>
+        data
+          .filter((item) => String(item.parentId) === String(parentId))
+          .map((item) => ({
+            ...item,
+            children: buildTree(data, item._id),
+          }));
+
+      res.json(buildTree(services));
+    } catch (err) {
+      res.status(500).json({ message: err.message });
+    }
+  },
   getServiceWithChildren,
 };
