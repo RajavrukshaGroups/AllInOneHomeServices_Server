@@ -7,6 +7,7 @@ const { dbConnect } = require("./config/dbConnect");
 const adminRoutes = require("./routes/adminRoutes/adminRoutes");
 const serviceRoutes = require("./routes/serviceRoutes/serviceRoutes");
 const timeSlotRoutes = require("./routes/adminRoutes/timeSlotRoutes");
+const clientRoutes=require("./routes/clientRoutes/clientRoutes")
 // const contactRoutes = require("./routes/clientRoutes/contactRoutes");
 
 const app = express();
@@ -64,6 +65,7 @@ dbConnect();
 app.use("/admin", adminRoutes);
 app.use("/services", serviceRoutes);
 app.use("/timeslots", timeSlotRoutes);
+app.use("/client",clientRoutes)
 // app.use("/contact", contactRoutes);
 // app.use("/scholar", scholarRoutes);
 
