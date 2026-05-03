@@ -74,7 +74,7 @@ app.use("/client",clientRoutes)
 ================================ */
 
 app.get("/", (req, res) => {
-  res.status(200).send("Hello from SLCMS server");
+  res.status(200).send("Hello from MKHS server");
 });
 
 /* ===============================
