@@ -1,5 +1,7 @@
 const Service = require("../../models/service");
-const TimeSlot = require("../../models/timeSlotModel")
+const TimeSlot = require("../../models/timeSlotModel");
+const { createBookingService } = require("../../services/bookingService");
+const Booking = require("../../models/Booking")
 
 const DEFAULT_SLOTS = [
   "09:00-10:00",
@@ -155,9 +157,166 @@ const getDefaultTimeSlots = async (req, res) => {
   }
 };
 
+// const createBooking =
+//   async (req, res) => {
+//     try {
+//       const {
+//         customer,
+//         allActiveBookings,
+//       } = req.body;
+
+//       if (
+//         !customer ||
+//         !allActiveBookings?.length
+//       ) {
+//         return res.status(400).json({
+//           success: false,
+//           message:
+//             "Booking data missing",
+//         });
+//       }
+
+//       const booking =
+//         await createBookingService(
+//           customer,
+//           allActiveBookings
+//         );
+
+//       res.status(201).json({
+//         success: true,
+
+//         message:
+//           "Booking confirmed successfully",
+
+//         bookingId:
+//           booking.bookingId,
+
+//         booking,
+//       });
+//     } catch (error) {
+//       console.log(error);
+
+//       res.status(500).json({
+//         success: false,
+//         message: "Server Error",
+//       });
+//     }
+//   };
+
+const createBooking = async (req, res) => {
+  try {
+    const {
+      customer,
+      allActiveBookings,
+    } = req.body;
+
+    // VALIDATION
+    if (
+      !customer ||
+      !customer.name ||
+      !customer.phone ||
+      !customer.address
+    ) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "Customer details are required",
+      });
+    }
+
+    if (
+      !allActiveBookings ||
+      !Array.isArray(
+        allActiveBookings
+      ) ||
+      allActiveBookings.length === 0
+    ) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "No services selected",
+      });
+    }
+
+    // CREATE BOOKING
+    const booking =
+      await createBookingService(
+        customer,
+        allActiveBookings
+      );
+
+    return res.status(201).json({
+      success: true,
+
+      message:
+        "Booking confirmed successfully",
+
+      bookingId:
+        booking.bookingId,
+
+      booking,
+    });
+  } catch (error) {
+    console.log(
+      "CREATE BOOKING ERROR:",
+      error
+    );
+
+    return res.status(500).json({
+      success: false,
+      message: "Server Error",
+    });
+  }
+};
+
+const getBookingBySearch = async (req, res) => {
+  try {
+    const { search } = req.query;
+
+    if (!search) {
+      return res.status(400).json({
+        success: false,
+        message: "Search query is required",
+      });
+    }
+
+    const searchText = search.trim();
+
+    const booking = await Booking.findOne({
+      $or: [
+        { bookingId: searchText },
+        { "customer.phone": searchText },
+      ],
+    });
+
+    if (!booking) {
+      return res.status(404).json({
+        success: false,
+        message: "No booking found",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      data: booking,
+    });
+
+  } catch (error) {
+    console.error("SERVER ERROR:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+
 module.exports = {
   getAllTheServicesSentToClient,
   getAllTheServicesSentToClientId,
   getAllSlotsByService,
   getDefaultTimeSlots,
+  createBooking,
+  getBookingBySearch
 };
