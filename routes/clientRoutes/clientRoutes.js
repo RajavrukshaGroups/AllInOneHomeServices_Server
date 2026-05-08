@@ -6,6 +6,8 @@ router.get("/send-services-client",ClientController.getAllTheServicesSentToClien
 router.get("/send-services-client/:id",ClientController.getAllTheServicesSentToClientId)
 router.get("/send-time-slot/:id",ClientController.getAllSlotsByService)
 router.get("/send-default-time-slots",ClientController.getDefaultTimeSlots)
+router.post("/create-booking",ClientController.createBooking )
+router.get("/get-booking",ClientController.getBookingBySearch )
 
 
 module.exports=router
