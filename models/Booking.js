@@ -94,11 +94,10 @@ const bookingSchema = new mongoose.Schema(
       unique: true,
     },
 
-    // ADD USER STATE HERE
-    userState: {
-      type: String,
-      enum: ["Active", "Inactive"],
-      default: "Active",
+    // ADD THIS
+    isActive: {
+      type: Boolean,
+      default: true,
     },
 
     customer: {
@@ -160,7 +159,7 @@ const bookingSchema = new mongoose.Schema(
         "Cancelled",
       ],
 
-      default: "Pending",
+      default: "Confirmed",
     },
   },
   {
