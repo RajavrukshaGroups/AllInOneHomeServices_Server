@@ -269,6 +269,47 @@ const createBooking = async (req, res) => {
   }
 };
 
+// const getBookingBySearch = async (req, res) => {
+//   try {
+//     const { search } = req.query;
+
+//     if (!search) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "Search query is required",
+//       });
+//     }
+
+//     const searchText = search.trim();
+
+//     const booking = await Booking.findOne({
+//       $or: [
+//         { bookingId: searchText },
+//         { "customer.phone": searchText },
+//       ],
+//     });
+
+//     if (!booking) {
+//       return res.status(404).json({
+//         success: false,
+//         message: "No booking found",
+//       });
+//     }
+
+//     return res.status(200).json({
+//       success: true,
+//       data: booking,
+//     });
+
+//   } catch (error) {
+//     console.error("SERVER ERROR:", error);
+
+//     return res.status(500).json({
+//       success: false,
+//       message: error.message,
+//     });
+//   }
+// };
 const getBookingBySearch = async (req, res) => {
   try {
     const { search } = req.query;
@@ -282,14 +323,34 @@ const getBookingBySearch = async (req, res) => {
 
     const searchText = search.trim();
 
-    const booking = await Booking.findOne({
-      $or: [
-        { bookingId: searchText },
-        { "customer.phone": searchText },
-      ],
-    });
+    let bookings = [];
 
-    if (!booking) {
+    // IF SEARCHING BY BOOKING ID
+    if (
+      searchText.startsWith("MKHS-")
+    ) {
+      const booking =
+        await Booking.findOne({
+          bookingId: searchText,
+        });
+
+      if (booking) {
+        bookings = [booking];
+      }
+    }
+
+    // IF SEARCHING BY PHONE NUMBER
+    else {
+      bookings = await Booking.find({
+        "customer.phone":
+          searchText,
+      }).sort({
+        createdAt: -1,
+      });
+    }
+
+    // NO BOOKINGS FOUND
+    if (bookings.length === 0) {
       return res.status(404).json({
         success: false,
         message: "No booking found",
@@ -298,11 +359,15 @@ const getBookingBySearch = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      data: booking,
+      total: bookings.length,
+      data: bookings,
     });
 
   } catch (error) {
-    console.error("SERVER ERROR:", error);
+    console.error(
+      "SERVER ERROR:",
+      error
+    );
 
     return res.status(500).json({
       success: false,
@@ -310,7 +375,6 @@ const getBookingBySearch = async (req, res) => {
     });
   }
 };
-
 
 module.exports = {
   getAllTheServicesSentToClient,
