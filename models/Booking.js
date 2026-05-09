@@ -1,4 +1,4 @@
-// import mongoose from "mongoose";
+// const mongoose = require("mongoose");
 
 // const bookingSchema = new mongoose.Schema(
 //   {
@@ -35,6 +35,14 @@
 
 //         serviceName: String,
 
+//         // ADD THIS
+//         selectedPriceOptions: [
+//           {
+//             title: String,
+//             price: Number,
+//           },
+//         ],
+
 //         selectedDate: String,
 
 //         selectedSlot: {
@@ -52,6 +60,7 @@
 
 //     bookingStatus: {
 //       type: String,
+
 //       enum: [
 //         "Pending",
 //         "Confirmed",
@@ -73,11 +82,8 @@
 //   bookingSchema
 // );
 
-// export default Booking;
+// module.exports = Booking;
 
-
-
-//import mongoose from "mongoose";
 const mongoose = require("mongoose");
 
 const bookingSchema = new mongoose.Schema(
@@ -86,6 +92,13 @@ const bookingSchema = new mongoose.Schema(
       type: String,
       required: true,
       unique: true,
+    },
+
+    // ADD USER STATE HERE
+    userState: {
+      type: String,
+      enum: ["Active", "Inactive"],
+      default: "Active",
     },
 
     customer: {
@@ -115,7 +128,6 @@ const bookingSchema = new mongoose.Schema(
 
         serviceName: String,
 
-        // ADD THIS
         selectedPriceOptions: [
           {
             title: String,
@@ -151,7 +163,6 @@ const bookingSchema = new mongoose.Schema(
       default: "Pending",
     },
   },
-
   {
     timestamps: true,
   }

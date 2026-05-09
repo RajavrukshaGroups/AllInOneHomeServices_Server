@@ -208,6 +208,7 @@ const createBooking = async (req, res) => {
     const {
       customer,
       allActiveBookings,
+      userState, // ADD THIS
     } = req.body;
 
     // VALIDATION
@@ -226,9 +227,7 @@ const createBooking = async (req, res) => {
 
     if (
       !allActiveBookings ||
-      !Array.isArray(
-        allActiveBookings
-      ) ||
+      !Array.isArray(allActiveBookings) ||
       allActiveBookings.length === 0
     ) {
       return res.status(400).json({
@@ -242,7 +241,8 @@ const createBooking = async (req, res) => {
     const booking =
       await createBookingService(
         customer,
-        allActiveBookings
+        allActiveBookings,
+        userState // PASS HERE
       );
 
     return res.status(201).json({
