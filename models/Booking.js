@@ -1,89 +1,3 @@
-// const mongoose = require("mongoose");
-
-// const bookingSchema = new mongoose.Schema(
-//   {
-//     bookingId: {
-//       type: String,
-//       required: true,
-//       unique: true,
-//     },
-
-//     customer: {
-//       name: {
-//         type: String,
-//         required: true,
-//       },
-
-//       phone: {
-//         type: String,
-//         required: true,
-//       },
-
-//       email: {
-//         type: String,
-//       },
-
-//       address: {
-//         type: String,
-//         required: true,
-//       },
-//     },
-
-//     services: [
-//       {
-//         serviceId: String,
-
-//         serviceName: String,
-
-//         // ADD THIS
-//         selectedPriceOptions: [
-//           {
-//             title: String,
-//             price: Number,
-//           },
-//         ],
-
-//         selectedDate: String,
-
-//         selectedSlot: {
-//           time: String,
-//         },
-
-//         totalPrice: Number,
-//       },
-//     ],
-
-//     grandTotal: {
-//       type: Number,
-//       required: true,
-//     },
-
-//     bookingStatus: {
-//       type: String,
-
-//       enum: [
-//         "Pending",
-//         "Confirmed",
-//         "Completed",
-//         "Cancelled",
-//       ],
-
-//       default: "Pending",
-//     },
-//   },
-
-//   {
-//     timestamps: true,
-//   }
-// );
-
-// const Booking = mongoose.model(
-//   "Booking",
-//   bookingSchema
-// );
-
-// module.exports = Booking;
-
 const mongoose = require("mongoose");
 
 const bookingSchema = new mongoose.Schema(
@@ -141,9 +55,31 @@ const bookingSchema = new mongoose.Schema(
         },
 
         totalPrice: Number,
+
+        // ✅ ADD THESE
+        workProgress: {
+          type: String,
+
+          enum: [
+            "Not Started",
+            "Assigned",
+            "In Progress",
+            "Completed",
+            "Cancelled",
+          ],
+
+          default: "Not Started",
+        },
+
+        paymentStatus: {
+          type: String,
+
+          enum: ["Pending", "Partially Paid", "Paid"],
+
+          default: "Pending",
+        },
       },
     ],
-
     grandTotal: {
       type: Number,
       required: true,
@@ -152,24 +88,16 @@ const bookingSchema = new mongoose.Schema(
     bookingStatus: {
       type: String,
 
-      enum: [
-        "Pending",
-        "Confirmed",
-        "Completed",
-        "Cancelled",
-      ],
+      enum: ["Pending", "Confirmed", "Completed", "Cancelled"],
 
       default: "Confirmed",
     },
   },
   {
     timestamps: true,
-  }
+  },
 );
 
-const Booking = mongoose.model(
-  "Booking",
-  bookingSchema
-);
+const Booking = mongoose.model("Booking", bookingSchema);
 
 module.exports = Booking;
