@@ -11,6 +11,42 @@ const normalizeParentId = (parentId) => {
 };
 
 /* ==============================
+   HELPER: CLEAN OPTIONS
+================================ */
+const cleanOptions = (parsedOptions = []) => {
+  return parsedOptions
+    .map((opt) => {
+      const values = opt.values
+        ?.map((v) => ({
+          label: v.label?.trim(),
+          price: Number(v.price) || 0,
+        }))
+        .filter((v) => v.label);
+
+      if (!values || values.length === 0) return null;
+
+      return {
+        name: opt.name?.trim() || "Option",
+        values,
+      };
+    })
+    .filter(Boolean);
+};
+
+/* ==============================
+   HELPER: CLEAN FEEDBACKS
+================================ */
+const cleanFeedbacks = (feedbacks = []) => {
+  return feedbacks
+    .map((fb) => ({
+      author: fb.author?.trim(),
+      review: fb.review?.trim(),
+      rating: Math.min(5, Math.max(1, Number(fb.rating) || 5)),
+    }))
+    .filter((fb) => fb.author && fb.review);
+};
+
+/* ==============================
    CREATE SERVICE
 ================================ */
 const createServices = async (req, res) => {
@@ -27,6 +63,7 @@ const createServices = async (req, res) => {
        ✅ PARSE OPTIONS
     ============================== */
     let parsedOptions = [];
+
     try {
       parsedOptions = JSON.parse(req.body.options || "[]");
     } catch {
@@ -37,6 +74,7 @@ const createServices = async (req, res) => {
        ✅ PARSE KEY FEATURES
     ============================== */
     let keyFeatures = [];
+
     try {
       keyFeatures = JSON.parse(req.body.keyFeatures || "[]");
     } catch {
@@ -44,37 +82,49 @@ const createServices = async (req, res) => {
     }
 
     /* ==============================
-       ✅ PARSE RATING
+       ✅ PARSE FEEDBACKS
     ============================== */
-    const rating = Math.min(5, Math.max(0, Number(req.body.rating) || 0));
+    let feedbacks = [];
 
-    const totalReviews = Math.max(0, Number(req.body.totalReviews) || 0);
+    try {
+      feedbacks = JSON.parse(req.body.feedbacks || "[]");
+    } catch {
+      feedbacks = [];
+    }
+
+    /* ==============================
+       ✅ CLEAN FEEDBACKS
+    ============================== */
+    const cleanedFeedbacks = cleanFeedbacks(feedbacks);
+
+    /* ==============================
+       ✅ CALCULATE RATINGS
+    ============================== */
+    const totalReviews =
+      cleanedFeedbacks.length || Number(req.body.totalReviews) || 0;
+
+    const averageRating =
+      cleanedFeedbacks.length > 0
+        ? Number(
+            (
+              cleanedFeedbacks.reduce(
+                (acc, curr) => acc + curr.rating,
+                0,
+              ) / cleanedFeedbacks.length
+            ).toFixed(1),
+          )
+        : Math.min(5, Math.max(0, Number(req.body.rating) || 0));
 
     /* ==============================
        ✅ IMAGES
     ============================== */
-    const imageUrls = req.files?.map((file) => file.path).filter(Boolean) || [];
+    const imageUrls =
+      req.files?.map((file) => file.path).filter(Boolean) || [];
 
     /* ==============================
        ✅ CLEAN OPTIONS
     ============================== */
-    const cleanedOptions = parsedOptions
-      .map((opt) => {
-        const values = opt.values
-          ?.map((v) => ({
-            label: v.label?.trim(),
-            price: Number(v.price) || 0,
-          }))
-          .filter((v) => v.label);
-
-        if (!values || values.length === 0) return null;
-
-        return {
-          name: opt.name?.trim() || "Option",
-          values,
-        };
-      })
-      .filter(Boolean);
+    const cleanedOptions = cleanOptions(parsedOptions);
 
     /* ==============================
        ✅ REMOVE RAW FIELDS
@@ -82,30 +132,46 @@ const createServices = async (req, res) => {
     const {
       options,
       parentId,
-      keyFeatures: _,
-      rating: __,
-      totalReviews: ___,
+      feedbacks: _feedbacks,
+      keyFeatures: _keyFeatures,
+      rating: _rating,
+      totalReviews: _totalReviews,
       ...rest
     } = req.body;
 
     const service = new Service({
       ...rest,
+
       name,
+
       description: req.body.description || "",
+
       keyFeatures,
 
-      // ⭐ NEW
-      rating,
+      /* ==============================
+         ⭐ FEEDBACKS
+      ============================== */
+      feedbacks: cleanedFeedbacks,
+
+      /* ==============================
+         ⭐ AUTO GENERATED RATING
+      ============================== */
+      rating: averageRating,
       totalReviews,
 
       type: req.body.type || "service",
+
       parentId: normalizeParentId(parentId),
 
       pricingType: pricingType || "fixed",
+
       basePricePerSqft:
-        pricingType === "per_sqft" ? Number(basePricePerSqft) || 0 : 0,
+        pricingType === "per_sqft"
+          ? Number(basePricePerSqft) || 0
+          : 0,
 
       options: cleanedOptions,
+
       images: imageUrls,
     });
 
@@ -131,6 +197,7 @@ const updateService = async (req, res) => {
        ✅ PARSE OPTIONS
     ============================== */
     let parsedOptions = [];
+
     try {
       parsedOptions = JSON.parse(req.body.options || "[]");
     } catch {
@@ -141,6 +208,7 @@ const updateService = async (req, res) => {
        ✅ PARSE KEY FEATURES
     ============================== */
     let keyFeatures = [];
+
     try {
       keyFeatures = JSON.parse(req.body.keyFeatures || "[]");
     } catch {
@@ -148,21 +216,50 @@ const updateService = async (req, res) => {
     }
 
     /* ==============================
-       ✅ PARSE RATING
+       ✅ PARSE FEEDBACKS
     ============================== */
-    const rating = Math.min(5, Math.max(0, Number(req.body.rating) || 0));
+    let feedbacks = [];
 
-    const totalReviews = Math.max(0, Number(req.body.totalReviews) || 0);
+    try {
+      feedbacks = JSON.parse(req.body.feedbacks || "[]");
+    } catch {
+      feedbacks = [];
+    }
+
+    /* ==============================
+       ✅ CLEAN FEEDBACKS
+    ============================== */
+    const cleanedFeedbacks = cleanFeedbacks(feedbacks);
+
+    /* ==============================
+       ✅ AUTO CALCULATE RATINGS
+    ============================== */
+    const totalReviews =
+      cleanedFeedbacks.length || Number(req.body.totalReviews) || 0;
+
+    const averageRating =
+      cleanedFeedbacks.length > 0
+        ? Number(
+            (
+              cleanedFeedbacks.reduce(
+                (acc, curr) => acc + curr.rating,
+                0,
+              ) / cleanedFeedbacks.length
+            ).toFixed(1),
+          )
+        : Math.min(5, Math.max(0, Number(req.body.rating) || 0));
 
     /* ==============================
        ✅ NEW IMAGES
     ============================== */
-    const imageUrls = req.files?.map((file) => file.path).filter(Boolean) || [];
+    const imageUrls =
+      req.files?.map((file) => file.path).filter(Boolean) || [];
 
     /* ==============================
        ✅ EXISTING IMAGES
     ============================== */
     let existingImages = [];
+
     try {
       existingImages = JSON.parse(req.body.existingImages || "[]");
     } catch {
@@ -174,23 +271,7 @@ const updateService = async (req, res) => {
     /* ==============================
        ✅ CLEAN OPTIONS
     ============================== */
-    const cleanedOptions = parsedOptions
-      .map((opt) => {
-        const values = opt.values
-          ?.map((v) => ({
-            label: v.label?.trim(),
-            price: Number(v.price) || 0,
-          }))
-          .filter((v) => v.label);
-
-        if (!values || values.length === 0) return null;
-
-        return {
-          name: opt.name?.trim() || "Option",
-          values,
-        };
-      })
-      .filter(Boolean);
+    const cleanedOptions = cleanOptions(parsedOptions);
 
     /* ==============================
        ✅ REMOVE RAW FIELDS
@@ -198,10 +279,11 @@ const updateService = async (req, res) => {
     const {
       options,
       parentId,
-      existingImages: _,
-      keyFeatures: __,
-      rating: ___,
-      totalReviews: ____,
+      existingImages: _existingImages,
+      feedbacks: _feedbacks,
+      keyFeatures: _keyFeatures,
+      rating: _rating,
+      totalReviews: _totalReviews,
       ...rest
     } = req.body;
 
@@ -217,26 +299,41 @@ const updateService = async (req, res) => {
       req.params.id,
       {
         ...rest,
+
         description: req.body.description || "",
+
         keyFeatures,
 
-        // ⭐ NEW
-        rating,
+        /* ==============================
+           ⭐ FEEDBACKS
+        ============================== */
+        feedbacks: cleanedFeedbacks,
+
+        /* ==============================
+           ⭐ AUTO GENERATED RATING
+        ============================== */
+        rating: averageRating,
         totalReviews,
 
         type: req.body.type || "service",
+
         parentId: normalizeParentId(parentId),
 
         pricingType: req.body.pricingType || "fixed",
+
         basePricePerSqft:
           req.body.pricingType === "per_sqft"
             ? Number(req.body.basePricePerSqft) || 0
             : 0,
 
         options: cleanedOptions,
+
         images: finalImages,
       },
-      { new: true, runValidators: true },
+      {
+        new: true,
+        runValidators: true,
+      },
     );
 
     res.json(updated);
@@ -264,7 +361,9 @@ const deleteService = async (req, res) => {
 
     await Service.findByIdAndDelete(req.params.id);
 
-    res.json({ message: "Deleted successfully" });
+    res.json({
+      message: "Deleted successfully",
+    });
   } catch (err) {
     res.status(500).json({
       message: err.message,
@@ -285,6 +384,9 @@ const getServiceTree = async (parentId) => {
   return services;
 };
 
+/* ==============================
+   GET SINGLE SERVICE + CHILDREN
+================================ */
 const getServiceWithChildren = async (req, res) => {
   try {
     const objectId = new mongoose.Types.ObjectId(req.params.id);
@@ -292,12 +394,17 @@ const getServiceWithChildren = async (req, res) => {
     const parent = await Service.findById(objectId).lean();
 
     if (!parent) {
-      return res.status(404).json({ message: "Service not found" });
+      return res.status(404).json({
+        message: "Service not found",
+      });
     }
 
     const children = await getServiceTree(objectId);
 
-    res.json({ parent, children });
+    res.json({
+      parent,
+      children,
+    });
   } catch (err) {
     res.status(500).json({
       message: err.message,
@@ -307,15 +414,20 @@ const getServiceWithChildren = async (req, res) => {
 
 module.exports = {
   createServices,
+
   updateService,
+
   deleteService,
+
   serviceTree: async (req, res) => {
     try {
       const services = await Service.find().lean();
 
       const buildTree = (data, parentId = null) =>
         data
-          .filter((item) => String(item.parentId) === String(parentId))
+          .filter(
+            (item) => String(item.parentId) === String(parentId),
+          )
           .map((item) => ({
             ...item,
             children: buildTree(data, item._id),
@@ -323,8 +435,11 @@ module.exports = {
 
       res.json(buildTree(services));
     } catch (err) {
-      res.status(500).json({ message: err.message });
+      res.status(500).json({
+        message: err.message,
+      });
     }
   },
+
   getServiceWithChildren,
 };
