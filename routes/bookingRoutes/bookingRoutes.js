@@ -20,4 +20,10 @@ router.put(
   adminBookingController.updateServiceStatus,
 );
 
+router.get(
+  "/fetch-overall-details",
+  protectAdmin,
+  adminBookingController.fetchOverallDetails,
+);
+
 module.exports = router;
