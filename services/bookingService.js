@@ -1,7 +1,6 @@
-import Booking from "../models/Booking.js";
-import { generateBookingId } from "../utils/generateBookingId.js";
-
-export const createBookingService = async (customer, allActiveBookings) => {
+const Booking = require("../models/Booking");
+const { generateBookingId } = require("../utils/generateBookingId");
+const createBookingService = async (customer, allActiveBookings) => {
   const bookingId = generateBookingId();
 
   const services = allActiveBookings.map((booking) => {
@@ -75,4 +74,8 @@ export const createBookingService = async (customer, allActiveBookings) => {
   });
 
   return booking;
+};
+
+module.exports = {
+  createBookingService,
 };
