@@ -1,5 +1,4 @@
 import Booking from "../models/Booking.js";
-
 import { generateBookingId } from "../utils/generateBookingId.js";
 
 export const createBookingService = async (customer, allActiveBookings) => {
